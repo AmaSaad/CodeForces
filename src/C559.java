@@ -43,12 +43,15 @@ public class C559 {
 		});
 
 		long[] actualPathsFromStartTo = new long[n + 1];
+		// note:without being passed through any of previous black cells
+
 		Pair start = new Pair(0, 0);
 		for (int i = 0; i < actualPathsFromStartTo.length; i++) {
 			actualPathsFromStartTo[i] = calculatePossiblePaths(start, blocks[i]);
 			for (int j = 0; j < i; j++) {
-				actualPathsFromStartTo[i] += (MODE-(actualPathsFromStartTo[j] * calculatePossiblePaths(blocks[j], blocks[i])%MODE));
-				actualPathsFromStartTo[i] %=MODE;
+				actualPathsFromStartTo[i] += (MODE
+						- (actualPathsFromStartTo[j] * calculatePossiblePaths(blocks[j], blocks[i]) % MODE));
+				actualPathsFromStartTo[i] %= MODE;
 			}
 
 		}
@@ -58,14 +61,14 @@ public class C559 {
 	}
 
 	private static long c(int n, int k) {
-		return (((fact[n] *factInv[n - k] )%MODE)* factInv[k])%MODE;
+		return (((fact[n] * factInv[n - k]) % MODE) * factInv[k]) % MODE;
 	}
-
 
 	static long MODE = 100_000_000_7;
 
 	private static long calculatePossiblePaths(Pair from, Pair to) {
-		if (from.i>to.i||from.j>to.j)return 0;
+		if (from.i > to.i || from.j > to.j)
+			return 0;
 		return calculatePossiblePaths(from.i, from.j, to.i, to.j);
 	}
 
