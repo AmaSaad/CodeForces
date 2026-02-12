@@ -106,6 +106,7 @@ export class TransactionEngine {
       business_id: business.id,
       type: transaction_type || 'sale',
       contact_id: contact?.id,
+      contact_name: contact?.name || contactName,
       items: resolvedItems,
       total_amount: totalAmount,
       amount_paid: amountPaid,
@@ -161,6 +162,7 @@ export class TransactionEngine {
       business_id: business.id,
       type: 'payment_received',
       contact_id: contact?.id,
+      contact_name: contact?.name || entities.contact?.name,
       items: [],
       total_amount: amount,
       amount_paid: amount,
@@ -242,9 +244,9 @@ export class TransactionEngine {
     if (!correction) return null;
 
     // Void the original (DynamoDB needs businessId + dateKey for composite key)
-    const dateKey = lastTxn.transaction_date
-      ? lastTxn.transaction_date.toISOString().slice(0, 10).replace(/-/g, '')
-      : new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    // dateKey must match the YYYY-MM-DD format used in the SK
+    const dateKey = (lastTxn as any)._dateKey
+      || lastTxn.transaction_date.toISOString().split('T')[0];
     await this.transactions.voidTransaction(lastTxn.id, business.id, dateKey);
 
     // Determine what changed
@@ -279,11 +281,19 @@ export class TransactionEngine {
       amountPaid = Math.min(Number(lastTxn.amount_paid), newTotal);
     }
 
+    // Resolve contact name for the corrected transaction's balance record
+    let contactName: string | undefined;
+    if (lastTxn.contact_id) {
+      const contact = await this.contactResolver.findById(business.id, lastTxn.contact_id);
+      contactName = contact?.name;
+    }
+
     // Create corrected transaction
     const correctedTxn = await this.transactions.create({
       business_id: business.id,
       type: lastTxn.type as Transaction['type'],
       contact_id: lastTxn.contact_id || undefined,
+      contact_name: contactName,
       items: newItems,
       total_amount: newTotal,
       amount_paid: amountPaid,
@@ -302,10 +312,8 @@ export class TransactionEngine {
     });
 
     let contactBalance: number | undefined;
-    let contactName: string | undefined;
     if (lastTxn.contact_id) {
       contactBalance = await this.transactions.getContactBalance(business.id, lastTxn.contact_id);
-      // Get contact name from the last transaction context
     }
 
     const text = `Corrected. Updated to ${formatAmount(newTotal, business.currency)}.${contactBalance !== undefined ? ` New balance: ${formatAmount(contactBalance, business.currency)}.` : ''}`;

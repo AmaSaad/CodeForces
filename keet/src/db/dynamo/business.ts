@@ -53,7 +53,7 @@ export class BusinessRepository {
 
   async update(id: string, fields: Partial<Pick<Business,
     'owner_name' | 'business_type' | 'currency' | 'timezone' |
-    'language_preference' | 'settings' | 'onboarding_complete'
+    'language_preference' | 'settings' | 'onboarding_complete' | 'onboarding_step'
   >>): Promise<Business> {
     const exprs: string[] = [];
     const names: Record<string, string> = {};
@@ -112,6 +112,7 @@ export class BusinessRepository {
       language_preference: item.language_preference,
       settings: item.settings || {},
       onboarding_complete: item.onboarding_complete || false,
+      onboarding_step: item.onboarding_step || undefined,
       created_at: new Date(item.created_at),
       updated_at: new Date(item.updated_at),
     };

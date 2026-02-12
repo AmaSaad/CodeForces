@@ -10,6 +10,7 @@ export interface Business {
   language_preference: 'ar' | 'en' | 'mixed';
   settings: BusinessSettings;
   onboarding_complete: boolean;
+  onboarding_step?: string;
   created_at: Date;
   updated_at: Date;
 }

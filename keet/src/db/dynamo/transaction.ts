@@ -24,6 +24,7 @@ export class TransactionRepository {
     business_id: string;
     type: Transaction['type'];
     contact_id?: string;
+    contact_name?: string;
     items: TransactionItem[];
     total_amount: number;
     amount_paid: number;
@@ -82,25 +83,24 @@ export class TransactionRepository {
 
       // Update running balance atomically
       const balanceDelta = this.computeBalanceDelta(params.type, params.total_amount, params.amount_paid);
-      if (balanceDelta !== 0) {
-        transactItems.push({
-          Update: {
-            TableName: TABLE_NAME,
-            Key: keys.balance(params.business_id, params.contact_id),
-            UpdateExpression: `SET balance = if_not_exists(balance, :zero) + :delta,
-              oldest_credit_date = if_not_exists(oldest_credit_date, :txnDate),
-              total_transactions = if_not_exists(total_transactions, :zero) + :one,
-              updated_at = :now`,
-            ExpressionAttributeValues: {
-              ':delta': balanceDelta,
-              ':zero': 0,
-              ':one': 1,
-              ':txnDate': txnDate.toISOString(),
-              ':now': now,
-            },
-          },
-        });
-      }
+      const balanceUpdate: any = {
+        TableName: TABLE_NAME,
+        Key: keys.balance(params.business_id, params.contact_id),
+        UpdateExpression: `SET balance = if_not_exists(balance, :zero) + :delta,
+          oldest_credit_date = if_not_exists(oldest_credit_date, :txnDate),
+          total_transactions = if_not_exists(total_transactions, :zero) + :one,
+          contact_name = if_not_exists(contact_name, :cname),
+          updated_at = :now`,
+        ExpressionAttributeValues: {
+          ':delta': balanceDelta,
+          ':zero': 0,
+          ':one': 1,
+          ':txnDate': txnDate.toISOString(),
+          ':cname': params.contact_name || 'Unknown',
+          ':now': now,
+        },
+      };
+      transactItems.push({ Update: balanceUpdate });
     }
 
     // Update daily summary atomically
@@ -400,7 +400,8 @@ export class TransactionRepository {
     switch (type) {
       case 'sale':
         values[':totalAmt'] = totalAmount;
-        values[':one'] = 1;
+        // Sign-aware: +1 for recording, -1 for voiding (totalAmount is negative when voiding)
+        values[':one'] = totalAmount >= 0 ? 1 : -1;
         values[':creditAmt'] = totalAmount - amountPaid;
         break;
       case 'payment_received':
@@ -417,7 +418,7 @@ export class TransactionRepository {
   // ─── Private: Mapper ───
 
   private toTransaction(item: Record<string, any>): Transaction {
-    return {
+    const txn: any = {
       id: item.id,
       business_id: item.business_id,
       type: item.type,
@@ -437,5 +438,8 @@ export class TransactionRepository {
       created_at: new Date(item.created_at),
       updated_at: new Date(item.updated_at),
     };
+    // Carry the DynamoDB dateKey so void/correction can reconstruct the SK
+    if (item._dateKey) txn._dateKey = item._dateKey;
+    return txn as Transaction;
   }
 }

@@ -4,14 +4,12 @@ import { detectLanguage } from '../utils/arabic.js';
 
 export type OnboardingStep = 'welcome' | 'ask_business' | 'ask_currency' | 'ask_question' | 'complete';
 
-interface OnboardingState {
-  step: OnboardingStep;
-  language: 'ar' | 'en' | 'mixed';
-}
-
 /**
  * Manages the first 5 minutes — the make-or-break onboarding.
  * Asks exactly 3 things: business type, currency, and their burning question.
+ *
+ * State is persisted on business.onboarding_step so we never skip a step
+ * even if the user's message arrives on a Lambda cold start.
  */
 export class OnboardingEngine {
   constructor(private businesses: BusinessRepository) {}
@@ -75,7 +73,11 @@ export class OnboardingEngine {
       case 'ask_business': {
         // They told us their business type
         const businessType = message.trim();
-        await this.businesses.update(business.id, { business_type: businessType });
+        // Persist both business_type AND the next step so we never skip currency
+        await this.businesses.update(business.id, {
+          business_type: businessType,
+          onboarding_step: 'ask_currency',
+        });
 
         return {
           response: this.getAskCurrencyMessage(lang, business.currency),
@@ -93,7 +95,7 @@ export class OnboardingEngine {
         let currency = business.currency;
         if (currencyMatch) {
           currency = currencyMatch[1];
-          await this.businesses.update(business.id, { currency });
+          await this.businesses.update(business.id, { currency, onboarding_step: 'ask_question' });
         } else if (!isConfirmation) {
           // They might have typed just a currency code or said no
           if (/^(no|لا|لأ|n)$/i.test(message.trim())) {
@@ -102,6 +104,9 @@ export class OnboardingEngine {
               : 'Sure, what currency do you use? (e.g., EGP, SAR, USD)';
             return { response, nextStep: 'ask_currency' };
           }
+        } else {
+          // Confirmed default currency — advance step
+          await this.businesses.update(business.id, { onboarding_step: 'ask_question' });
         }
 
         return {
@@ -112,7 +117,10 @@ export class OnboardingEngine {
 
       case 'ask_question': {
         // Their burning question — we acknowledge it and complete onboarding
-        await this.businesses.update(business.id, { onboarding_complete: true });
+        await this.businesses.update(business.id, {
+          onboarding_complete: true,
+          onboarding_step: 'complete',
+        });
 
         return {
           response: this.getCompletionMessage(lang, message),
@@ -129,8 +137,16 @@ export class OnboardingEngine {
     }
   }
 
+  /**
+   * Determines the current onboarding step from persisted state.
+   * Uses explicit onboarding_step field rather than deriving from business fields,
+   * so intermediate steps like 'ask_currency' are never skipped.
+   */
   determineOnboardingStep(business: Business): OnboardingStep {
     if (business.onboarding_complete) return 'complete';
+    // Use persisted step if available (the fix for the currency-skip bug)
+    if (business.onboarding_step) return business.onboarding_step as OnboardingStep;
+    // Fallback for businesses created before this fix
     if (!business.business_type) return 'ask_business';
     return 'ask_question';
   }

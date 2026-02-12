@@ -10,8 +10,9 @@ export const config = {
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN || '',
   },
-  database: {
-    url: process.env.DATABASE_URL || 'postgresql://keet:keet@localhost:5432/keet',
+  dynamo: {
+    tableName: process.env.DYNAMODB_TABLE || 'keet',
+    endpoint: process.env.DYNAMODB_ENDPOINT, // Set for local dev (DynamoDB Local)
   },
   llm: {
     openaiApiKey: process.env.OPENAI_API_KEY || '',

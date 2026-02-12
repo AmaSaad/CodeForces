@@ -66,8 +66,8 @@ export class KeetAgent {
         return this.handleOnboarding(business, msg);
       }
 
-      // 3. Check for pending confirmation callbacks
-      // (handled separately in callback handler)
+      // 3. Cancel any stale pending confirmations — user moved on
+      await this.confirmations.resolveAllForUser(msg.channel, msg.channel_user_id);
 
       // 4. Build context for parser
       const context = await this.buildContext(business);

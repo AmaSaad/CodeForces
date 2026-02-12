@@ -49,6 +49,10 @@ export class ContactResolver {
     return null;
   }
 
+  async findById(businessId: string, contactId: string): Promise<Contact | null> {
+    return this.contacts.findById(businessId, contactId);
+  }
+
   async getBalance(businessId: string, contactId: string): Promise<number> {
     // Delegated to transaction repository — imported where needed
     return 0; // Placeholder, actual balance comes from TransactionRepository
