@@ -3,15 +3,20 @@ import { config } from '../config.js';
 
 const { Pool } = pg;
 
+const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
 let pool: pg.Pool | null = null;
 
 export function getPool(): pg.Pool {
   if (!pool) {
     pool = new Pool({
       connectionString: config.database.url,
-      max: 20,
-      idleTimeoutMillis: 30000,
+      // Lambda: 1 connection per instance (RDS Proxy handles pooling)
+      // Local: 20 connections for concurrent dev requests
+      max: isLambda ? 1 : 20,
+      idleTimeoutMillis: isLambda ? 1000 : 30000,
       connectionTimeoutMillis: 5000,
+      ssl: isLambda ? { rejectUnauthorized: false } : undefined,
     });
 
     pool.on('error', (err) => {
