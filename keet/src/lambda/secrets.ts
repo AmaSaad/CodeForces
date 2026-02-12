@@ -25,13 +25,5 @@ export async function loadSecrets(): Promise<void> {
     process.env.OPENAI_API_KEY = await getSecret(openaiArn);
   }
 
-  // Load DB credentials and build DATABASE_URL
-  const dbSecretArn = process.env.DB_SECRET_ARN;
-  if (dbSecretArn && process.env.DATABASE_URL?.includes('PROXY_AUTH')) {
-    const raw = await getSecret(dbSecretArn);
-    const creds = JSON.parse(raw);
-    const host = process.env.DATABASE_URL.match(/@(.+):5432/)?.[1] || 'localhost';
-    process.env.DATABASE_URL =
-      `postgresql://${creds.username}:${encodeURIComponent(creds.password)}@${host}:5432/keet?sslmode=require`;
-  }
+  // No DB credentials needed — DynamoDB uses IAM auth automatically
 }

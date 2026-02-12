@@ -1,7 +1,6 @@
 import { config } from './config.js';
 import { KeetAgent } from './engine/agent.js';
 import { TelegramChannel } from './channels/telegram.js';
-import { closePool } from './db/index.js';
 
 async function main() {
   console.log('Starting Keet...');
@@ -27,7 +26,6 @@ async function main() {
   const shutdown = async (signal: string) => {
     console.log(`\nReceived ${signal}. Shutting down gracefully...`);
     await telegram.stop();
-    await closePool();
     process.exit(0);
   };
 

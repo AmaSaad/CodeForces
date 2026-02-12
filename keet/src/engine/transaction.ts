@@ -1,4 +1,4 @@
-import { TransactionRepository } from '../db/repositories/transaction.js';
+import { TransactionRepository } from '../db/dynamo/transaction.js';
 import { ContactResolver } from './contact.js';
 import { ItemResolver } from './item.js';
 import type {
@@ -72,9 +72,9 @@ export class TransactionEngine {
         // Update stock
         if (resolved) {
           if (transaction_type === 'sale' || transaction_type === 'return') {
-            await this.itemResolver.updateStockForSale(resolved.id, item.quantity);
+            await this.itemResolver.updateStockForSale(business.id, resolved.id, item.quantity);
           } else if (transaction_type === 'purchase') {
-            await this.itemResolver.updateStockForPurchase(resolved.id, item.quantity);
+            await this.itemResolver.updateStockForPurchase(business.id, resolved.id, item.quantity);
           }
         }
       }
@@ -241,8 +241,11 @@ export class TransactionEngine {
     const correction = intent.correction;
     if (!correction) return null;
 
-    // Void the original
-    await this.transactions.voidTransaction(lastTxn.id);
+    // Void the original (DynamoDB needs businessId + dateKey for composite key)
+    const dateKey = lastTxn.transaction_date
+      ? lastTxn.transaction_date.toISOString().slice(0, 10).replace(/-/g, '')
+      : new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    await this.transactions.voidTransaction(lastTxn.id, business.id, dateKey);
 
     // Determine what changed
     let newTotal = Number(lastTxn.total_amount);

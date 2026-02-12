@@ -1,4 +1,4 @@
-import { BusinessRepository } from '../db/repositories/business.js';
+import { BusinessRepository } from '../db/dynamo/business.js';
 import type { Business } from '../types.js';
 import { detectLanguage } from '../utils/arabic.js';
 

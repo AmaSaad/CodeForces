@@ -1,4 +1,4 @@
-import { ItemRepository } from '../db/repositories/item.js';
+import { ItemRepository } from '../db/dynamo/item.js';
 import { normalizeArabic } from '../utils/arabic.js';
 import type { Item } from '../types.js';
 
@@ -23,7 +23,7 @@ export class ItemResolver {
     if (item) {
       // Update price if a new one is provided
       if (options?.price && options.price !== Number(item.current_price)) {
-        await this.items.updatePrice(item.id, options.price);
+        await this.items.updatePriceForBiz(businessId, item.id, options.price);
         item.current_price = options.price;
       }
       return item;
@@ -35,14 +35,14 @@ export class ItemResolver {
     for (const i of allItems) {
       if (normalizeArabic(i.name) === arabicNormalized) {
         if (options?.price && options.price !== Number(i.current_price)) {
-          await this.items.updatePrice(i.id, options.price);
+          await this.items.updatePriceForBiz(businessId, i.id, options.price);
         }
         return i;
       }
       for (const alias of i.aliases) {
         if (normalizeArabic(alias) === arabicNormalized) {
           if (options?.price && options.price !== Number(i.current_price)) {
-            await this.items.updatePrice(i.id, options.price);
+            await this.items.updatePriceForBiz(businessId, i.id, options.price);
           }
           return i;
         }
@@ -62,11 +62,11 @@ export class ItemResolver {
     return null;
   }
 
-  async updateStockForSale(itemId: string, quantity: number): Promise<void> {
-    await this.items.updateStock(itemId, -quantity);
+  async updateStockForSale(businessId: string, itemId: string, quantity: number): Promise<void> {
+    await this.items.updateStock(businessId, itemId, -quantity);
   }
 
-  async updateStockForPurchase(itemId: string, quantity: number): Promise<void> {
-    await this.items.updateStock(itemId, quantity);
+  async updateStockForPurchase(businessId: string, itemId: string, quantity: number): Promise<void> {
+    await this.items.updateStock(businessId, itemId, quantity);
   }
 }

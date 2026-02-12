@@ -1,8 +1,8 @@
-import { BusinessRepository } from '../db/repositories/business.js';
-import { ContactRepository } from '../db/repositories/contact.js';
-import { ItemRepository } from '../db/repositories/item.js';
-import { TransactionRepository } from '../db/repositories/transaction.js';
-import { ConfirmationRepository } from '../db/repositories/confirmation.js';
+import { BusinessRepository } from '../db/dynamo/business.js';
+import { ContactRepository } from '../db/dynamo/contact.js';
+import { ItemRepository } from '../db/dynamo/item.js';
+import { TransactionRepository } from '../db/dynamo/transaction.js';
+import { ConfirmationRepository } from '../db/dynamo/confirmation.js';
 import { MessageParser } from '../parser/index.js';
 import { TransactionEngine } from './transaction.js';
 import { QueryEngine } from './query.js';
@@ -114,11 +114,9 @@ export class KeetAgent {
     const pending = await this.confirmations.getLatestPending(channel, channelUserId);
     if (!pending) return null;
 
-    await this.confirmations.resolve(pending.id);
+    await this.confirmations.resolve(pending.id, channel, channelUserId);
 
     if (callbackData === 'confirm_yes') {
-      // The pending confirmation data contains the parsed intent
-      // Re-process it as confirmed
       const business = await this.businesses.findByChannelUser(channel, channelUserId);
       if (!business) return null;
 

@@ -1,6 +1,6 @@
-import { TransactionRepository } from '../db/repositories/transaction.js';
-import { ContactRepository } from '../db/repositories/contact.js';
-import { ItemRepository } from '../db/repositories/item.js';
+import { TransactionRepository } from '../db/dynamo/transaction.js';
+import { ContactRepository } from '../db/dynamo/contact.js';
+import { ItemRepository } from '../db/dynamo/item.js';
 import type { Business, ParsedIntent, DailySummary } from '../types.js';
 import { formatAmount } from '../utils/amount.js';
 import { formatDate } from '../utils/date.js';

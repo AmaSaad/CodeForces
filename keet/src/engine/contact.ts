@@ -1,4 +1,4 @@
-import { ContactRepository } from '../db/repositories/contact.js';
+import { ContactRepository } from '../db/dynamo/contact.js';
 import { normalizeArabic } from '../utils/arabic.js';
 import type { Contact } from '../types.js';
 
