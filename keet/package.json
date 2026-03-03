@@ -1,0 +1,31 @@
+{
+  "name": "keet",
+  "version": "0.1.0",
+  "description": "Chat-native business memory — record transactions, track debts, get summaries via Telegram",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.3",
+    "@aws-sdk/client-dynamodb": "^3.988.0",
+    "@aws-sdk/lib-dynamodb": "^3.988.0",
+    "dotenv": "^16.4.7",
+    "openai": "^4.77.0",
+    "telegraf": "^4.16.3",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.988.0",
+    "@types/aws-lambda": "^8.10.160",
+    "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
